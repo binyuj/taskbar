@@ -3,7 +3,6 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <stdio.h>
-#include <io.h>
 #include "psapi.h"
 #include "resource.h"
 
@@ -26,15 +25,25 @@ extern "C" WINBASEAPI HWND WINAPI GetConsoleWindow();
 HINSTANCE hInst;
 HWND hWnd;
 HWND hConsole;
-TCHAR szTitle[64] = L"";
-TCHAR szWindowClass[16] = L"taskbar";
-TCHAR szCommandLine[1024] = L"";
-TCHAR szTooltip[512] = L"";
-TCHAR szBalloon[512] = L"";
-TCHAR szEnvironment[1024] = L"";
+TCHAR szTitle[MAX_PATH] = L"";
+TCHAR szWindowClass[MAX_PATH] = L"taskbar";
+TCHAR szCommandLine[MAX_PATH] = L"";
+TCHAR szTooltip[MAX_PATH] = L"";
+TCHAR szBalloon[MAX_PATH] = L"";
+TCHAR szEnvironment[MAX_PATH] = L"";
 volatile DWORD dwChildrenPid;
 
-static DWORD GetProcessId(HANDLE hProcess)
+void __cdecl message_box(const wchar_t *title, const wchar_t *format, ...)
+{
+	wchar_t message[4096] = L"";
+	va_list args;
+	va_start(args, format);
+	_vsnwprintf(message, sizeof(message)/sizeof(message[0])-1, format, args);
+	MessageBoxW(NULL, message, title, MB_OK);
+	va_end(args);
+}
+
+DWORD MyGetProcessId(HANDLE hProcess)
 {
 	// https://gist.github.com/kusma/268888
 	typedef DWORD (WINAPI *pfnGPI)(HANDLE);
@@ -162,7 +171,7 @@ BOOL SetEenvironment()
 		{
 			*pos = 0;
 			SetEnvironmentVariableW(token, pos+1);
-			// wprintf(L"[%s] = [%s]\n", token, pos+1);
+			//message_box(L"SetEnvironmentVariableW", L"[%s] = [%s]\n", token, pos+1);
 		}
 		token = wcstok(NULL, sep);
 	}
@@ -200,12 +209,11 @@ BOOL ExecCmdline()
 	BOOL bRet = CreateProcess(NULL, szCommandLine, NULL, NULL, FALSE, NULL, NULL, NULL, &si, &pi);
 	if(bRet)
 	{
-		dwChildrenPid = GetProcessId(pi.hProcess);
+		dwChildrenPid = MyGetProcessId(pi.hProcess);
 	}
 	else
 	{
-		// wprintf(L"ExecCmdline \"%s\" failed!\n", szCommandLine);
-		MessageBox(NULL, szCommandLine, L"Error: \x6267\x884c\x547d\x4ee4\x5931\x8d25!", MB_OK);
+		message_box(L"GoAgent", L"\x6267\x884c\x547d\x4ee4\x5931\x8d25: %s", szCommandLine);
 		ExitProcess(0);
 	}
 	CloseHandle(pi.hThread);
