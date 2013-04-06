@@ -9,8 +9,8 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "psapi.lib")
 #pragma comment(linker, "/ALIGN:4096")
+#pragma comment(linker,"/ENTRY:WinEntry")
 #pragma comment(linker,"/MERGE:.text=.data")
-#pragma comment(linker,"/ENTRY:main")
 
 extern "C" WINBASEAPI HWND WINAPI GetConsoleWindow();
 
@@ -39,7 +39,7 @@ void __cdecl message_box(const wchar_t *title, const wchar_t *format, ...)
 	va_list args;
 	va_start(args, format);
 	_vsnwprintf(message, sizeof(message)/sizeof(message[0])-1, format, args);
-	MessageBoxW(NULL, message, title, MB_OK);
+	MessageBoxW(NULL, message, title, MB_ICONWARNING|MB_OK);
 	va_end(args);
 }
 
@@ -183,8 +183,8 @@ BOOL CreateConsole()
 	TCHAR szVisible[BUFSIZ] = L"";
 
 	AllocConsole();
-	//_wfreopen(L"CONIN$",  L"r+t", stdin);
-	//_wfreopen(L"CONOUT$", L"w+t", stdout);
+	_wfreopen(L"CONIN$",  L"r+t", stdin);
+	_wfreopen(L"CONOUT$", L"w+t", stdout);
 
 	hConsole = GetConsoleWindow();
 	
@@ -230,7 +230,7 @@ BOOL ReloadCmdline()
 	}
 	ShowWindow(hConsole, SW_SHOW);
 	SetForegroundWindow(hConsole);
-	//wprintf(L"\n\n");
+	wprintf(L"\n\n");
 	Sleep(200);
 	ExecCmdline();
 	return TRUE;
@@ -276,7 +276,7 @@ void CheckMemoryLimit()
 		if (pmc.WorkingSetSize > dwMemoryLimit)
 		{
 			SetConsoleTextAttribute(GetStdHandle(-11), 0x04);
-			// wprintf(L"\n\ndwChildrenPid=%d WorkingSetSize=%d large than szMemoryLimit=%s, restart.\n\n", dwChildrenPid, pmc.WorkingSetSize, szMemoryLimit);
+			wprintf(L"\n\ndwChildrenPid=%d WorkingSetSize=%d large than szMemoryLimit=%s, restart.\n\n", dwChildrenPid, pmc.WorkingSetSize, szMemoryLimit);
 			SetConsoleTextAttribute(GetStdHandle(-11), 0x07);
 			ReloadCmdline();
 		}
@@ -357,7 +357,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 }
 
-int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR lpCmdLine, int nCmdShow)
+
+int APIENTRY WinEntry(HINSTANCE hInstance, HINSTANCE, LPTSTR lpCmdLine, int nCmdShow)
 {
 	MSG msg;
 	MyRegisterClass(hInstance);
@@ -379,7 +380,19 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR lpCmdLine, int nCmd
 	return 0;
 }
 
+#if defined(_WINDOWS)
+
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR lpCmdLine, int nCmdShow)
+{
+	ExitProcess(WinEntry(hInstance, NULL, lpCmdLine, nCmdShow));
+	return 0;
+}
+
+#else
+
 extern "C" void main()
 {
-	ExitProcess(wWinMain(GetModuleHandle(NULL), NULL, GetCommandLineW(), SW_SHOWNORMAL));
+	ExitProcess(WinEntry(GetModuleHandle(NULL), NULL, GetCommandLineW(), SW_SHOWNORMAL));
 }
+
+#endif
