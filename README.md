@@ -1,4 +1,4 @@
-download the  [archive](/archive/en.zip)
+download the  archive https://github.com/binyuj/taskbar/archive/en.zip
 
 open `taskbar.dsw` with `VC6`, click Compiled and you will get `taskbar.exe`
 
