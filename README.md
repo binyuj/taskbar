@@ -1,4 +1,4 @@
-download the  archive https://github.com/goagent/taskbar/archive/master.zip
+download the  archive [/archive/en.zip]
 
 open `taskbar.dsw` with `VC6`, click Compiled and you will get `taskbar.exe`
 
